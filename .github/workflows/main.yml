@@ -1,0 +1,36 @@
+name: Detect and Send Changed Files
+
+on:
+  push:
+    branches:
+      - main  # Run this workflow on pushes to the 'main' branch
+
+jobs:
+  detect-and-send-files:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Step 2: Detect changed files
+      - name: Detect changed files
+        id: changed-files
+        run: |
+          changed_files=$(git diff --name-only HEAD^ HEAD | grep -E '\.(py|js|ts|java|cpp|cs|go)$' || true)
+          if [ -n "$changed_files" ]; then
+            changed_files_sanitized=$(echo "$changed_files" | tr '\n' ' ')
+            echo "CHANGED_FILES=$changed_files_sanitized" >> $GITHUB_ENV
+            echo "Found changed files: $changed_files_sanitized"
+          else
+            echo "No relevant source files changed"
+            exit 0
+
+      # Step 3: Send changed files to an external API
+      - name: Send changed files to external service
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d "{\"changed_files\": \"${{ env.CHANGED_FILES }}\"}" \
+            https://your-api-endpoint.com/handle-changed-files
